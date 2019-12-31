@@ -1,21 +1,61 @@
 package ocfgo
 
 import (
-	"fmt"
 	"reflect"
+	"strconv"
 	"strings"
 )
 
-func parseMarshalData(sectionName string, t reflect.Type) {
-	for i:=0; i < t.Elem().NumField(); i++ {
-		field := t.Elem().Field(i)
-		fmt.Println(field.Name)
+func parseMarshalData(line string, marshalData interface{},curSectionName *string) (err error) {
+	sectionType := reflect.TypeOf(marshalData)
+	sectionValue := reflect.ValueOf(marshalData)
+	// 将section字段保存至curSectionName
+	if isSection(line) {
+		sectionConfigName := line[1 : len(line)-1] // 配置文件解析出来的sectionName
+		for i := 0; i < sectionType.Elem().NumField(); i++ {
+			sectionTypeField := sectionType.Elem().Field(i)    // filed.Name = MysqldSection
+			sectionTagValue := sectionTypeField.Tag.Get("ini") // 传递过来结构体中的tag(mysqld|client)
+			//fmt.Println(sectionTypeField.Name, sectionTypeField.Type, sectionTagValue)  // MysqldSection otest.MysqldItem mysqld
+			if sectionConfigName == sectionTagValue {
+				*curSectionName = sectionTypeField.Name
+				return
+			}
+		}
 	}
+	eqelIndex := strings.Index(line, "=")  // 分割key=value
+	itemKey := line[:eqelIndex]
+	itemKey = strings.TrimSpace(itemKey)
+	itemValue := line[eqelIndex+1:]
+	itemValue = strings.TrimSpace(itemValue)
+	sectionValueField := sectionValue.Elem().FieldByName(*curSectionName).Type()
+	//fmt.Println(sectionValueField)  // MysqldItem | ClientItem
+
+	for j:=0; j < sectionValueField.NumField(); j++ {
+		itemField := sectionValueField.Field(j)
+		itemTagValue := itemField.Tag.Get("ini")  // tag值
+		if itemKey == itemTagValue {  // tag值与配置文件截取的key作比较
+			switch itemField.Type.Kind().String() {
+			case "string":
+				sectionValue.Elem().FieldByName(*curSectionName).Field(j).SetString(itemValue)
+				return
+			case "int":
+				intItemValue, toierr := strconv.ParseInt(itemValue, 10, 64)
+				if err != nil {
+					return toierr
+				}
+				sectionValue.Elem().FieldByName(*curSectionName).Field(j).SetInt(intItemValue)
+				return
+			}
+		}
+	}
+	return
 }
 
+// marshalData是指针,获取结构体具体值需要调用Elem()方法
 func MarshalIni(data []byte, marshalData interface{}) (err error) {
-	t := reflect.TypeOf(marshalData)
-	err = checkMarshalDataType(t)
+	var curSectionName string
+	sectionType := reflect.TypeOf(marshalData)
+	err = checkMarshalDataType(sectionType)
 	if err != nil {
 		return
 	}
@@ -27,9 +67,9 @@ func MarshalIni(data []byte, marshalData interface{}) (err error) {
 		if isSpaceOrComment(line) {
 			continue
 		}
-		if isSection(line) {
-			sectionName := line[1 : len(line)-1]
-			parseMarshalData(sectionName, t)
+		err = parseMarshalData(line, marshalData, &curSectionName)
+		if err != nil {
+			return
 		}
 	}
 	return

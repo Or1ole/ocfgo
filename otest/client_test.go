@@ -1,26 +1,27 @@
 package otest
 
 import (
+	"fmt"
 	"github.com/Or1ole/ocfgo"
 	"io/ioutil"
 	"testing"
 )
 
-type MysqldSection struct {
-	Basedir string `ini: "basedir"`
-	Datadir string `ini: "datadir"`
-	Socket string `ini: "socket"`
-	Port int `ini: "port"`
+type MysqldItem struct {
+	Basedir string `ini:"basedir"`
+	Datadir string `ini:"datadir"`
+	Socket string `ini:"socket"`
+	Port int `ini:"port"`
 }
 
-type ClientSection struct {
-	Socket string `ini: "socket"`
-	Charset string `ini: "charset"`
+type ClientItem struct {
+	Socket string `ini:"socket"`
+	Charset string `ini:"charset"`
 }
 
 type iniConfig struct {
-	MysqldSection `ini: "mysqld"`  // 对应ini文件的section name
-	ClientSection `ini: "client"`
+	MysqldSection MysqldItem `ini:"mysqld"`  // 对应ini文件的section name
+	ClientSection ClientItem `ini:"client"`
 }
 
 func TestReadConfig(t *testing.T)  {
@@ -33,4 +34,5 @@ func TestReadConfig(t *testing.T)  {
 	if err != nil {
 		panic(err)
 	}
+	fmt.Println(marshalData)
 }
