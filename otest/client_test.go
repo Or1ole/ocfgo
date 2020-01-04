@@ -35,4 +35,11 @@ func TestReadConfig(t *testing.T)  {
 		panic(err)
 	}
 	fmt.Println(marshalData)
+	fmt.Println("===========================unmarshal==========================")
+	data, err := ocfgo.UnmarshalIni(&marshalData)
+	err = ioutil.WriteFile("/home/sisu/xx.ini", data, 0666)
+	if err != nil {
+		fmt.Println("write file failed, err:", err)
+		return
+	}
 }

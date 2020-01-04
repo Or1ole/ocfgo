@@ -54,8 +54,8 @@ func parseMarshalData(line string, marshalData interface{},curSectionName *strin
 // marshalData是指针,获取结构体具体值需要调用Elem()方法
 func MarshalIni(data []byte, marshalData interface{}) (err error) {
 	var curSectionName string
-	sectionType := reflect.TypeOf(marshalData)
-	err = checkMarshalDataType(sectionType)
+	iniType := reflect.TypeOf(marshalData)
+	err = checkMarshalDataType(iniType)
 	if err != nil {
 		return
 	}
